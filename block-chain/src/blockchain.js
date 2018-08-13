@@ -29,14 +29,14 @@ const getBlockChain = () => blockChain;
 // console.log(gesnesisBlock);
 
 // 마지막 blcok 정보 
-const getLastBlock = () => blockChain[blockChain.length-1]; 
+const getNewestBlock = () => blockChain[blockChain.length-1]; 
 
 // blcok 생성시간 뒤에 365나누기는 sort  
 const getTimestamp = () => new Date().getTime(); 
 
 // Hash화 만들기
 const createHash = (index, preHash,timestamp,data) =>
-CryptoJs.SHA256(index+preHash+timestamp+JSON.stringify(data)).toString();
+    CryptoJs.SHA256(index+preHash+timestamp+JSON.stringify(data)).toString();
 
 //hasn 가져오기 
 const getBlockHash = block => createHash(block.index,block.preHash,block.timestamp,block.data);
@@ -44,7 +44,7 @@ const getBlockHash = block => createHash(block.index,block.preHash,block.timesta
 //새 블럭 생성
 const createNewBlock = data => {
     //새로운 block 생성을위해 이전 block 정보를 가져옴 
-    const preBlock = getLastBlock();
+    const preBlock = getNewestBlock();
     // 새로운 블럭은 index 추가
     const newBlockIndex = preBlock.index+1;
     const newTimestamp = getTimestamp();
@@ -67,9 +67,9 @@ const createNewBlock = data => {
 
 
 //그전 블럭과 최근 블럭을 비교하여 검증
-const isNewBlockValid = (candidateBlock,lastestBlock) =>{
+const isBlockValid = (candidateBlock,lastestBlock) =>{
     //데이터형 검증
-    if(!isNewStructureValid(candidateBlock)) {
+    if(!isBlockStructureValid(candidateBlock)) {
         console.log("data structure is not same");
         return false;
     }
@@ -93,7 +93,7 @@ const isNewBlockValid = (candidateBlock,lastestBlock) =>{
 };
 
 //블럭에 대한 검증 - 형태만 확인 
-const isNewStructureValid = block =>{
+const isBlockStructureValid = block =>{
     return(
       typeof block.index === "number" &&
       typeof block.hash === "string" &&
@@ -114,7 +114,7 @@ const isChainValid = candidateChain => {
     }
     //모든 block 확인
     for(let i =1;i<candidateChain.length;i++){
-        if(!isNewBlockValid(candidateChain[i],candidateChain[i-1])){
+        if(!isBlockValid(candidateChain[i],candidateChain[i-1])){
             return false;
         }
     }
@@ -135,7 +135,7 @@ const replaceChain = candidateChain =>{
 
 // 블럭 검사 후 추가
 const addBlockToChain = candidateBlock =>{
-    if(isNewBlockValid(candidateBlock,getLastBlock())){
+    if(isBlockValid(candidateBlock,getNewestBlock())){
         blockChain.push(candidateBlock);
         return true;
     }
@@ -143,9 +143,12 @@ const addBlockToChain = candidateBlock =>{
     
 };
 
-
 // 불러올 수 있는 메소드 명시
 module.exports = {
     getBlockChain,
-    createNewBlock
+    createNewBlock,
+    getNewestBlock,
+    isBlockStructureValid,
+    addBlockToChain,  //한두개 차이날경우
+    replaceChain    //많이 차이날 경우
 }
