@@ -1,5 +1,5 @@
 # blockChain
-blockChain Study with nodejs
+blockChain with nodejs
 
 # Development environment
 windows 10 
