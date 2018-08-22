@@ -3,7 +3,7 @@ const WebSockets = require('ws'),
 // import WebSockets from "ws";
 
 //마지막 블럭 가져오기
-const {getNewestBlock,isBlockStructureVali,replaceChain,addBlockToChain} = Blockchain;
+const {getNewestBlock,isBlockStructureValid,replaceChain,addBlockToChain,getBlockChain} = Blockchain;
 
 const sockets = [];
 
@@ -77,6 +77,9 @@ const handleSocketMessage = ws =>{
             case GET_LASTEST:
                 sendMessage(ws,responseLatest());
                 break;
+            case GET_ALL:
+                sendMessage(ws,responseAll());
+                break;
             case BLOCKCHAIN_RESPONSE:
                 const receiveBlocks = message.data;
                 if(receiveBlocks === null){
@@ -126,7 +129,9 @@ const sendMessage = (ws,message) => ws.send(JSON.stringify(message));
 
 // 형식에 따른 응답  
 //자기자신의 마지막 블럭
-const responseLatest = () => blockchainResponse([getNewestBlock]);
+const responseLatest = () => blockchainResponse([getNewestBlock()]);
+
+const sendMessageToAll = message => sockets.forEach(ws => sendMessage(ws,message));
 
 //받은 블럭의 마지막 블럭
 const handleBlockchainResponse = receivedBlocks =>{
@@ -134,23 +139,34 @@ const handleBlockchainResponse = receivedBlocks =>{
         console.log("handleBlockchainResponse - length size is 0")
         return;
     }
+    
     const lastBlockRecevied = receivedBlocks[receivedBlocks.length -1];
+    if(!isBlockStructureValid(lastBlockRecevied)){
+        console.log("handleBlockchainResponse -isBlockStructureValid error ")
+        return;
+    }
+
     const newsblock = getNewestBlock();
     if (lastBlockRecevied.index > newsblock.index){
         // hash 가 하나만 추가되어 온경우 마지막 값만 확인
-        if( newsblock.hash === lastBlockRecevied.preHash){
-            addBlockToChain(lastBlockRecevied);
+        if(newsblock.hash === lastBlockRecevied.preHash){
+            if(addBlockToChain(lastBlockRecevied)){
+                broadcastNewBlock();
+            }
         }else if(receivedBlocks.length === 1){
-            // 나중에
+            sendMessageToAll(getAll());
         }else{
             replaceChain(receivedBlocks);
         }
     }
-    
-
 };
+
+const responseAll = () => blockchainResponse(getBlockChain());
+
+const broadcastNewBlock = () => sendMessageToAll(responseLatest());
 
 module.exports = {
     startP2PServer,
-    connectToPeers
+    connectToPeers,
+    broadcastNewBlock
 };
